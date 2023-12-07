@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "MCP4725.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -161,6 +161,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 	}
 }
 
+MCP4725 myMCP4725;
+
 /* USER CODE END 0 */
 
 /**
@@ -195,6 +197,7 @@ int main(void)
   MX_TIM2_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+    myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
 
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
@@ -203,6 +206,10 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
+	if (!MCP4725_isConnected(&myMCP4725)) {
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+		HAL_Delay(500);
+	}
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -211,7 +218,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+		for (int i = 0; i < 4095; i++) {
+			MCP4725_setValue(&myMCP4725, (uint16_t) (i), MCP4725_FAST_MODE,
+					MCP4725_POWER_DOWN_OFF);
+			HAL_Delay(10);
+		}
+		HAL_Delay(1000);
+		/*
 		if (ch3<=1500) {
 			maxpoint = 1900;
 			midpoint = 1500;
@@ -284,7 +297,7 @@ int main(void)
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
 
-		HAL_Delay(20);
+		HAL_Delay(20);*/
 	}
   /* USER CODE END 3 */
 }
@@ -523,12 +536,23 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, right_motor_direction_Pin|left_motor_direction_Pin|handbrake_Pin|shifter_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : right_motor_direction_Pin left_motor_direction_Pin handbrake_Pin shifter_Pin */
   GPIO_InitStruct.Pin = right_motor_direction_Pin|left_motor_direction_Pin|handbrake_Pin|shifter_Pin;
