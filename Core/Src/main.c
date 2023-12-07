@@ -275,6 +275,7 @@ int main(void) {
 					map(right_output, minpoint, midpoint, 0, 1000) - 1000);
 
 
+		//i2c ile başlatılmış sürücünün bufferından output verilecek
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
 
