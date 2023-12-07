@@ -212,13 +212,13 @@ int main(void) {
 			midpoint = 1500;
 			minpoint = 1100;
 			deadband_scale=16;
-			motor_startup_deadband = 500;
+			motor_startup_deadband = 100;
 		} else {
 			maxpoint = 1900;
 			midpoint = 1700;
 			minpoint = 1500;
 			deadband_scale=32;
-			motor_startup_deadband = 300;
+			motor_startup_deadband = 100;
 		}
 
 		ch1_smooth -= ch1_smooth / 20.0;
@@ -257,22 +257,23 @@ int main(void) {
 			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, SET);
 		else
 			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, RESET);
-
+		if(ch4>=1500)
+		{
+			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, SET);
+		}
 
 		if (left_output >= midpoint)
-			left_motor_pwm = map(left_output, midpoint, maxpoint, motor_startup_deadband, 1000);
+			left_motor_pwm = map(left_output, midpoint, maxpoint, 0, 1000);
 		else
 			left_motor_pwm = abs(
-					map(left_output, minpoint, midpoint, 0, 1000 - motor_startup_deadband) - 1000);
+					map(left_output, minpoint, midpoint, 0, 1000) - 1000);
 
 		if (right_output >= midpoint)
-			right_motor_pwm = map(right_output, midpoint, maxpoint, motor_startup_deadband, 1000);
+			right_motor_pwm = map(right_output, midpoint, maxpoint,0, 1000);
 		else
 			right_motor_pwm = abs(
-					map(right_output, minpoint, midpoint, 0, 1000 - motor_startup_deadband) - 1000);
+					map(right_output, minpoint, midpoint, 0, 1000) - 1000);
 
-		if(left_motor_pwm == motor_startup_deadband) left_motor_pwm = 0;
-		if(right_motor_pwm == motor_startup_deadband) right_motor_pwm = 0;
 
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
 		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
