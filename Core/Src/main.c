@@ -41,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -70,6 +71,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -161,7 +163,8 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 	}
 }
 
-MCP4725 myMCP4725;
+MCP4725 LeftMCP4725;
+MCP4725 RightMCP4725;
 
 /* USER CODE END 0 */
 
@@ -196,8 +199,10 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   MX_I2C1_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-    myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
+    LeftMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
+    RightMCP4725 = MCP4725_init(&hi2c2, MCP4725A0_ADDR_A00, 5);
 
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
@@ -206,7 +211,7 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
-	if (!MCP4725_isConnected(&myMCP4725)) {
+	if (!MCP4725_isConnected(&LeftMCP4725) || !MCP4725_isConnected(&RightMCP4725)) {
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 		HAL_Delay(500);
 	}
@@ -219,12 +224,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		for (int i = 0; i < 4095; i++) {
-			MCP4725_setValue(&myMCP4725, (uint16_t) (i), MCP4725_FAST_MODE,
-					MCP4725_POWER_DOWN_OFF);
 			HAL_Delay(10);
 		}
 		HAL_Delay(1000);
-		/*
+
 		if (ch3<=1500) {
 			maxpoint = 1900;
 			midpoint = 1500;
@@ -294,10 +297,13 @@ int main(void)
 
 
 		//i2c ile başlatılmış sürücünün bufferından output verilecek
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
+		MCP4725_setValue(&LeftMCP4725, (uint16_t) (map(left_motor_pwm, 0, 1000, 0, 4095)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+		MCP4725_setValue(&RightMCP4725, (uint16_t) (map(right_motor_pwm, 0, 1000, 0, 4095)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
 
-		HAL_Delay(20);*/
+		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
+		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
+
+		HAL_Delay(20);
 	}
   /* USER CODE END 3 */
 }
@@ -372,6 +378,40 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
 
 }
 
