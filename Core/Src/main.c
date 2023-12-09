@@ -224,11 +224,13 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		for (int i = 0; i < 4095; i++) {
+			MCP4725_setValue(&LeftMCP4725, (uint16_t) (i), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+			MCP4725_setValue(&RightMCP4725, (uint16_t) (i), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
 			HAL_Delay(10);
 		}
 		HAL_Delay(1000);
 
-		if (ch3<=1500) {
+		/*if (ch3<=1500) {
 			maxpoint = 1900;
 			midpoint = 1500;
 			minpoint = 1100;
@@ -303,7 +305,7 @@ int main(void)
 		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
 		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
 
-		HAL_Delay(20);
+		HAL_Delay(20);*/
 	}
   /* USER CODE END 3 */
 }
