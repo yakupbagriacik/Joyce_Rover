@@ -206,7 +206,7 @@ int main(void)
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
-	if (!MCP4725_isConnected(&myMCP4725)) {
+	while (!MCP4725_isConnected(&myMCP4725)) {
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 		HAL_Delay(500);
 	}
@@ -221,7 +221,7 @@ int main(void)
 		for (int i = 0; i < 4095; i++) {
 			MCP4725_setValue(&myMCP4725, (uint16_t) (i), MCP4725_FAST_MODE,
 					MCP4725_POWER_DOWN_OFF);
-			HAL_Delay(10);
+			HAL_Delay(1);
 		}
 		HAL_Delay(1000);
 		/*
