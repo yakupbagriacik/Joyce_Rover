@@ -197,7 +197,7 @@ int main(void)
   MX_TIM2_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-    myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
+    myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A01, 5);
 
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);

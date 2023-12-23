@@ -1339,11 +1339,11 @@ int main(void)
   MX_I2C1_Init();
  8000b96:	f000 f89f 	bl	8000cd8 <MX_I2C1_Init>
   /* USER CODE BEGIN 2 */
-    myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
+    myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A01, 5);
  8000b9a:	4c26      	ldr	r4, [pc, #152]	; (8000c34 <main+0xb8>)
  8000b9c:	4638      	mov	r0, r7
  8000b9e:	4b26      	ldr	r3, [pc, #152]	; (8000c38 <main+0xbc>)
- 8000ba0:	2260      	movs	r2, #96	; 0x60
+ 8000ba0:	2261      	movs	r2, #97	; 0x61
  8000ba2:	4926      	ldr	r1, [pc, #152]	; (8000c3c <main+0xc0>)
  8000ba4:	f7ff fcb8 	bl	8000518 <MCP4725_init>
  8000ba8:	463b      	mov	r3, r7
