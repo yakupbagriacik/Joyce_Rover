@@ -162,6 +162,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 }
 
 MCP4725 myMCP4725;
+MCP4725 my2MCP4725;
 
 /* USER CODE END 0 */
 
@@ -198,6 +199,7 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
     myMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A01, 5);
+    my2MCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
 
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
@@ -221,6 +223,8 @@ int main(void)
 		for (int i = 0; i < 4095; i++) {
 			MCP4725_setValue(&myMCP4725, (uint16_t) (i), MCP4725_FAST_MODE,
 					MCP4725_POWER_DOWN_OFF);
+			MCP4725_setValue(&my2MCP4725, (uint16_t) (i), MCP4725_FAST_MODE,
+								MCP4725_POWER_DOWN_OFF);
 			HAL_Delay(1);
 		}
 		HAL_Delay(1000);
