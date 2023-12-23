@@ -201,8 +201,8 @@ int main(void)
   MX_I2C1_Init();
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-    LeftMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 5);
-    RightMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A01, 5);
+    LeftMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 4.57);
+    RightMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A01, 4.23);
 
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
@@ -223,11 +223,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		for (int i = 0; i < 4095; i++) {
-			HAL_Delay(10);
-		}
-		HAL_Delay(1000);
-
 		if (ch3<=1500) {
 			maxpoint = 1900;
 			midpoint = 1500;
@@ -236,9 +231,9 @@ int main(void)
 			motor_startup_deadband = 100;
 		} else {
 			maxpoint = 1900;
-			midpoint = 1700;
-			minpoint = 1500;
-			deadband_scale=32;
+			midpoint = 1500;
+			minpoint = 1100;
+			deadband_scale=16;
 			motor_startup_deadband = 100;
 		}
 
@@ -297,8 +292,8 @@ int main(void)
 
 
 		//i2c ile başlatılmış sürücünün bufferından output verilecek
-		MCP4725_setValue(&LeftMCP4725, (uint16_t) (map(left_motor_pwm, 0, 1000, 0, 4095)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
-		MCP4725_setValue(&RightMCP4725, (uint16_t) (map(right_motor_pwm, 0, 1000, 0, 4095)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+		MCP4725_setValue(&LeftMCP4725, (uint16_t) (map(left_motor_pwm, 0, 1000, 0, 2000)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+		MCP4725_setValue(&RightMCP4725, (uint16_t) (map(right_motor_pwm, 0, 1000, 0, 2000)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
 
 		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
 		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
