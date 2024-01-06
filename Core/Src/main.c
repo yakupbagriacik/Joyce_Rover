@@ -227,21 +227,21 @@ int main(void)
 			maxpoint = 1900;
 			midpoint = 1500;
 			minpoint = 1100;
-			deadband_scale=16;
+			deadband_scale=32;
 			motor_startup_deadband = 100;
 		} else {
 			maxpoint = 1900;
 			midpoint = 1500;
 			minpoint = 1100;
-			deadband_scale=16;
+			deadband_scale=32;
 			motor_startup_deadband = 100;
 		}
 
-		ch1_smooth -= ch1_smooth / 20.0;
-		ch1_smooth += ch1 / 20.0;
+		ch1_smooth -= ch1_smooth / 10.0;
+		ch1_smooth += ch1 / 10.0;
 
-		ch2_smooth -= ch2_smooth / 20.0;
-		ch2_smooth += ch2 / 20.0;
+		ch2_smooth -= ch2_smooth / 10.0;
+		ch2_smooth += ch2 / 10.0;
 
 		left_output = (ch2_smooth + (ch1_smooth - 1500));
 		if (left_output < midpoint - (deadband_scale / 4))
@@ -249,7 +249,7 @@ int main(void)
 		else
 			HAL_GPIO_WritePin(GPIOA, left_motor_direction_Pin, RESET);
 
-		if (abs(left_output - midpoint) < deadband_scale)
+		if (abs(left_output - midpoint) < (deadband_scale/2))
 			left_output = midpoint;  //orta ölübant  (abs() -> mutlak değer)
 		if (left_output > maxpoint - deadband_scale)
 			left_output = maxpoint;       //max 500
@@ -262,14 +262,14 @@ int main(void)
 		else
 			HAL_GPIO_WritePin(GPIOA, right_motor_direction_Pin, RESET);
 
-		if (abs(right_output - midpoint) < deadband_scale)
+		if (abs(right_output - midpoint) < (deadband_scale/2))
 			right_output = midpoint;  //orta ölübant  (abs() -> mutlak değer)
 		if (right_output > maxpoint - deadband_scale)
 			right_output = maxpoint;       //max 500
 		else if (right_output < minpoint + deadband_scale)
 			right_output = minpoint;  //min -500
 
-		if (left_output == midpoint && right_output == midpoint)
+		if (abs(left_output - midpoint) < (deadband_scale) && abs(right_output - midpoint) < (deadband_scale))
 			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, SET);
 		else
 			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, RESET);
@@ -292,8 +292,8 @@ int main(void)
 
 
 		//i2c ile başlatılmış sürücünün bufferından output verilecek
-		MCP4725_setValue(&LeftMCP4725, (uint16_t) (map(left_motor_pwm, 0, 1000, 0, 2000)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
-		MCP4725_setValue(&RightMCP4725, (uint16_t) (map(right_motor_pwm, 0, 1000, 0, 2000)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+		MCP4725_setValue(&LeftMCP4725, (uint16_t) (map(left_motor_pwm, 0, 1000, 800, 2500)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+		MCP4725_setValue(&RightMCP4725, (uint16_t) (map(right_motor_pwm, 0, 1000, 800, 2500)), MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
 
 		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
 		//__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
