@@ -243,7 +243,7 @@ int main(void) {
 		ch2_smooth -= ch2_smooth / 10.0;
 		ch2_smooth += ch2 / 10.0;
 
-		left_output = (ch2_smooth + (ch1_smooth - 1500));
+		left_output = (ch2_smooth + ((ch1_smooth - 1500) * 0.5));
 		if (left_output < midpoint - (deadband_scale / 4))
 			HAL_GPIO_WritePin(GPIOA, left_motor_direction_Pin, SET);
 		else
@@ -256,7 +256,7 @@ int main(void) {
 		else if (left_output < minpoint + deadband_scale)
 			left_output = minpoint;  //min -500
 
-		right_output = (ch2_smooth - (ch1_smooth - 1500));
+		right_output = (ch2_smooth - ((ch1_smooth - 1500)*0.5));
 		if (right_output < midpoint - (deadband_scale / 4))
 			HAL_GPIO_WritePin(GPIOA, right_motor_direction_Pin, SET);
 		else
@@ -269,14 +269,14 @@ int main(void) {
 		else if (right_output < minpoint + deadband_scale)
 			right_output = minpoint;  //min -500
 
-		if (left_output == midpoint && right_output == midpoint) {
-			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, SET);
+		if (left_output == midpoint) {
 			HAL_GPIO_WritePin(GPIOB, left_break_output_Pin, SET);
+		} else {
+			HAL_GPIO_WritePin(GPIOB, left_break_output_Pin, RESET);
+		}
+		if (right_output == midpoint) {
 			HAL_GPIO_WritePin(GPIOB, right_break_output_Pin, SET);
 		} else {
-
-			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, RESET);
-			HAL_GPIO_WritePin(GPIOB, left_break_output_Pin, RESET);
 			HAL_GPIO_WritePin(GPIOB, right_break_output_Pin, RESET);
 		}
 
