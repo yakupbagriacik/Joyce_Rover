@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "MCP4725.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +40,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
+
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 
@@ -49,7 +52,7 @@ volatile uint64_t ch2_rising = 0, ch2_falling = 0, ch2 = 0, pre_ch2 = 0;
 volatile uint64_t ch3_rising = 0, ch3_falling = 0, ch3 = 0, pre_ch3 = 0;
 volatile uint64_t ch4_rising = 0, ch4_falling = 0, ch4 = 0, pre_ch4 = 0;
 
-int deadband_scale=0;
+int deadband_scale = 0;
 int maxpoint = 0;
 int midpoint = 0;
 int minpoint = 0;
@@ -67,6 +70,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -158,6 +163,9 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 	}
 }
 
+MCP4725 LeftMCP4725;
+MCP4725 RightMCP4725;
+
 /* USER CODE END 0 */
 
 /**
@@ -189,7 +197,11 @@ int main(void) {
 	MX_GPIO_Init();
 	MX_TIM1_Init();
 	MX_TIM2_Init();
+	MX_I2C1_Init();
+	MX_I2C2_Init();
 	/* USER CODE BEGIN 2 */
+	LeftMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A00, 4.57);
+	RightMCP4725 = MCP4725_init(&hi2c1, MCP4725A0_ADDR_A01, 4.23);
 
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
@@ -198,6 +210,11 @@ int main(void) {
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
+	if (!MCP4725_isConnected(&LeftMCP4725)
+			|| !MCP4725_isConnected(&RightMCP4725)) {
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+		HAL_Delay(500);
+	}
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -205,61 +222,68 @@ int main(void) {
 	while (1) {
 		/* USER CODE END WHILE */
 
-		/* USER CODE BEGIN 3 */ //
-
-		if (ch3<=1500) {
+		/* USER CODE BEGIN 3 */
+		if (ch3 <= 1500) {
 			maxpoint = 1900;
 			midpoint = 1500;
 			minpoint = 1100;
-			deadband_scale=16;
+			deadband_scale = 32;
 			motor_startup_deadband = 100;
 		} else {
 			maxpoint = 1900;
-			midpoint = 1700;
-			minpoint = 1500;
-			deadband_scale=32;
+			midpoint = 1500;
+			minpoint = 1100;
+			deadband_scale = 32;
 			motor_startup_deadband = 100;
 		}
 
-		ch1_smooth -= ch1_smooth / 20.0;
-		ch1_smooth += ch1 / 20.0;
+		ch1_smooth -= ch1_smooth / 10.0;
+		ch1_smooth += ch1 / 10.0;
 
-		ch2_smooth -= ch2_smooth / 20.0;
-		ch2_smooth += ch2 / 20.0;
+		ch2_smooth -= ch2_smooth / 10.0;
+		ch2_smooth += ch2 / 10.0;
 
-		left_output = (ch2_smooth + (ch1_smooth - 1500));
+		left_output = (ch2_smooth + ((ch1_smooth - 1500) * 0.5));
 		if (left_output < midpoint - (deadband_scale / 4))
 			HAL_GPIO_WritePin(GPIOA, left_motor_direction_Pin, SET);
 		else
 			HAL_GPIO_WritePin(GPIOA, left_motor_direction_Pin, RESET);
 
-		if (abs(left_output - midpoint) < deadband_scale)
+		if (abs(left_output - midpoint) < (deadband_scale / 2))
 			left_output = midpoint;  //orta ölübant  (abs() -> mutlak değer)
 		if (left_output > maxpoint - deadband_scale)
 			left_output = maxpoint;       //max 500
 		else if (left_output < minpoint + deadband_scale)
 			left_output = minpoint;  //min -500
 
-		right_output = (ch2_smooth - (ch1_smooth - 1500));
+		right_output = (ch2_smooth - ((ch1_smooth - 1500)*0.5));
 		if (right_output < midpoint - (deadband_scale / 4))
 			HAL_GPIO_WritePin(GPIOA, right_motor_direction_Pin, SET);
 		else
 			HAL_GPIO_WritePin(GPIOA, right_motor_direction_Pin, RESET);
 
-		if (abs(right_output - midpoint) < deadband_scale)
+		if (abs(right_output - midpoint) < (deadband_scale / 2))
 			right_output = midpoint;  //orta ölübant  (abs() -> mutlak değer)
 		if (right_output > maxpoint - deadband_scale)
 			right_output = maxpoint;       //max 500
 		else if (right_output < minpoint + deadband_scale)
 			right_output = minpoint;  //min -500
 
-		if (left_output == midpoint && right_output == midpoint)
+		if (left_output == midpoint) {
+			HAL_GPIO_WritePin(GPIOB, left_break_output_Pin, SET);
+		} else {
+			HAL_GPIO_WritePin(GPIOB, left_break_output_Pin, RESET);
+		}
+		if (right_output == midpoint) {
+			HAL_GPIO_WritePin(GPIOB, right_break_output_Pin, SET);
+		} else {
+			HAL_GPIO_WritePin(GPIOB, right_break_output_Pin, RESET);
+		}
+
+		if (ch4 >= 1500) {
 			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, SET);
-		else
-			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, RESET);
-		if(ch4>=1500)
-		{
-			HAL_GPIO_WritePin(GPIOA, handbrake_Pin, SET);
+			HAL_GPIO_WritePin(GPIOB, left_break_output_Pin, SET);
+			HAL_GPIO_WritePin(GPIOB, right_break_output_Pin, SET);
 		}
 
 		if (left_output >= midpoint)
@@ -269,14 +293,18 @@ int main(void) {
 					map(left_output, minpoint, midpoint, 0, 1000) - 1000);
 
 		if (right_output >= midpoint)
-			right_motor_pwm = map(right_output, midpoint, maxpoint,0, 1000);
+			right_motor_pwm = map(right_output, midpoint, maxpoint, 0, 1000);
 		else
 			right_motor_pwm = abs(
 					map(right_output, minpoint, midpoint, 0, 1000) - 1000);
 
-
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, left_motor_pwm);
-		__HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, right_motor_pwm);
+		//i2c ile başlatılmış sürücünün bufferından output verilecek
+		MCP4725_setValue(&LeftMCP4725,
+				(uint16_t) (map(left_motor_pwm, 0, 1000, 800, 2500)),
+				MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
+		MCP4725_setValue(&RightMCP4725,
+				(uint16_t) (map(right_motor_pwm, 0, 1000, 800, 2500)),
+				MCP4725_FAST_MODE, MCP4725_POWER_DOWN_OFF);
 
 		HAL_Delay(20);
 	}
@@ -317,6 +345,70 @@ void SystemClock_Config(void) {
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
 		Error_Handler();
 	}
+}
+
+/**
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void) {
+
+	/* USER CODE BEGIN I2C1_Init 0 */
+
+	/* USER CODE END I2C1_Init 0 */
+
+	/* USER CODE BEGIN I2C1_Init 1 */
+
+	/* USER CODE END I2C1_Init 1 */
+	hi2c1.Instance = I2C1;
+	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+	hi2c1.Init.OwnAddress1 = 0;
+	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c1.Init.OwnAddress2 = 0;
+	hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c1) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C1_Init 2 */
+
+	/* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+ * @brief I2C2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C2_Init(void) {
+
+	/* USER CODE BEGIN I2C2_Init 0 */
+
+	/* USER CODE END I2C2_Init 0 */
+
+	/* USER CODE BEGIN I2C2_Init 1 */
+
+	/* USER CODE END I2C2_Init 1 */
+	hi2c2.Instance = I2C2;
+	hi2c2.Init.ClockSpeed = 100000;
+	hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+	hi2c2.Init.OwnAddress1 = 0;
+	hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	hi2c2.Init.OwnAddress2 = 0;
+	hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&hi2c2) != HAL_OK) {
+		Error_Handler();
+	}
+	/* USER CODE BEGIN I2C2_Init 2 */
+
+	/* USER CODE END I2C2_Init 2 */
+
 }
 
 /**
@@ -467,13 +559,29 @@ static void MX_GPIO_Init(void) {
 	/* USER CODE END MX_GPIO_Init_1 */
 
 	/* GPIO Ports Clock Enable */
+	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOA,
 			right_motor_direction_Pin | left_motor_direction_Pin | handbrake_Pin
 					| shifter_Pin, GPIO_PIN_RESET);
+
+	/*Configure GPIO pin Output Level */
+	HAL_GPIO_WritePin(GPIOB, left_break_output_Pin | right_break_output_Pin,
+			GPIO_PIN_RESET);
+
+	/*Configure GPIO pin : PC13 */
+	GPIO_InitStruct.Pin = GPIO_PIN_13;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
 	/*Configure GPIO pins : right_motor_direction_Pin left_motor_direction_Pin handbrake_Pin shifter_Pin */
 	GPIO_InitStruct.Pin = right_motor_direction_Pin | left_motor_direction_Pin
@@ -482,6 +590,13 @@ static void MX_GPIO_Init(void) {
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pins : left_break_output_Pin right_break_output_Pin */
+	GPIO_InitStruct.Pin = left_break_output_Pin | right_break_output_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 	/* USER CODE BEGIN MX_GPIO_Init_2 */
 	/* USER CODE END MX_GPIO_Init_2 */

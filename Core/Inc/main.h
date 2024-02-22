@@ -67,6 +67,10 @@ void Error_Handler(void);
 #define handbrake_GPIO_Port GPIOA
 #define shifter_Pin GPIO_PIN_7
 #define shifter_GPIO_Port GPIOA
+#define left_break_output_Pin GPIO_PIN_0
+#define left_break_output_GPIO_Port GPIOB
+#define right_break_output_Pin GPIO_PIN_1
+#define right_break_output_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
